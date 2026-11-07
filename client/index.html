@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>🐾 宠物聊天 · 客户端（桌面宠物 + IM）</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
+    --txt:#e6e9ef; --sub:#9aa3b2; --accent:#6ea8fe; --accent2:#7ee0c0;
+    --warn:#ffb454; --bad:#ff7a7a; --ok:#7ee0c0; --chip:#232936;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);height:100vh;overflow:hidden;
+    font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px}
+  button{font-family:inherit;cursor:pointer}
+  input,select{font-family:inherit;background:var(--panel2);color:var(--txt);
+    border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;outline:none}
+  input:focus,select:focus{border-color:var(--accent)}
+  .btn{background:var(--accent);color:#0f1115;border:none;border-radius:8px;padding:8px 14px;font-weight:600}
+  .btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
+  .btn.danger{background:var(--bad);color:#0f1115}
+  .muted{color:var(--sub);font-size:12px}
+
+  /* ---------- 登录/注册 ---------- */
+  #auth{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(135deg,#141a26,#0f1115)}
+  .auth-card{width:340px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px}
+  .auth-card h2{margin:0 0 4px;font-size:20px}
+  .auth-card .sub{color:var(--sub);font-size:12px;margin-bottom:16px}
+  .auth-card label{display:block;font-size:12px;color:var(--sub);margin:10px 0 4px}
+  .auth-card input,.auth-card select{width:100%}
+  .row{display:flex;gap:8px;margin-top:16px}
+  .row .btn{flex:1}
+  .switch{margin-top:12px;text-align:center}
+  .switch a{color:var(--accent);cursor:pointer}
+
+  /* ---------- 主界面 ---------- */
+  #app{display:none;height:100vh;grid-template-columns:260px 1fr}
+  .sidebar{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column}
+  .side-head{padding:14px;border-bottom:1px solid var(--line)}
+  .side-head .me{font-weight:700}
+  .side-head .uid{color:var(--sub);font-size:11px;margin-top:2px;word-break:break-all}
+  .side-sec{padding:12px 14px;border-bottom:1px solid var(--line)}
+  .side-sec h3{margin:0 0 8px;font-size:13px;color:var(--accent2)}
+  .friend-add{display:flex;gap:6px}
+  .friend-add input{flex:1;font-size:12px;padding:6px 8px}
+  .conv{display:flex;flex-direction:column;gap:2px;overflow:auto;flex:1}
+  .conv-item{padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+  .conv-item:hover{background:var(--panel2)}
+  .conv-item.active{background:var(--panel2);border-left:3px solid var(--accent)}
+  .conv-item .name{font-weight:600}
+  .conv-item .last{color:var(--sub);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .main{display:flex;flex-direction:column;background:var(--bg)}
+  .main-head{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .main-head .title{font-weight:700}
+  .main-head .spacer{flex:1}
+  .msgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .bubble{max-width:70%;padding:9px 12px;border-radius:12px;line-height:1.5;word-break:break-word}
+  .bubble.me{align-self:flex-end;background:var(--accent);color:#0f1115;border-bottom-right-radius:3px}
+  .bubble.them{align-self:flex-start;background:var(--panel2);border:1px solid var(--line);border-bottom-left-radius:3px}
+  .bubble .who{font-size:11px;color:var(--sub);margin-bottom:2px}
+  .bubble.me .who{color:#0f1115aa}
+  .composer{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+  .composer input{flex:1}
+  .empty{margin:auto;color:var(--sub);text-align:center}
+
+  /* ---------- 桌面悬浮宠物（桌面层） ---------- */
+  #deskpet{position:fixed;right:24px;bottom:24px;width:130px;z-index:99999;
+    display:none;flex-direction:column;align-items:center;user-select:none;touch-action:none}
+  #deskpet .bubble-pet{position:relative;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:6px 10px;max-width:160px;margin-bottom:8px;font-size:12px;
+    color:var(--txt);box-shadow:0 6px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .25s}
+  #deskpet .bubble-pet.show{opacity:1}
+  #deskpet .bubble-pet:after{content:"";position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);
+    border:7px solid transparent;border-top-color:var(--panel);border-bottom:0}
+  #deskpet .pet-img{width:96px;height:96px;border-radius:18px;background:#fff2;border:1px solid var(--line);
+    box-shadow:0 8px 24px rgba(0,0,0,.45);cursor:grab;display:grid;place-items:center;overflow:hidden}
+  #deskpet .pet-img:active{cursor:grabbing}
+  #deskpet .pet-img img{width:100%;height:100%;object-fit:cover}
+  #deskpet .pet-name{margin-top:6px;font-size:11px;color:var(--sub);background:var(--panel);
+    padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
+  #deskpet .mini{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;
+    background:var(--accent);color:#0f1115;border:none;font-size:12px;font-weight:700;display:none}
+  #deskpet .mini.show{display:block}
+
+  /* ---- 宠物引擎：动作状态机动画 ---- */
+  .pet-img.idle{animation:breathe 3s ease-in-out infinite}
+  .pet-img.happy{animation:bounce .6s ease}
+  .pet-img.surprised{animation:shake .5s ease}
+  .pet-img.thinking{animation:bob 1s ease-in-out infinite}
+  .pet-img.sad{animation:droop 1s ease}
+  .pet-img.greeting{animation:wave .8s ease}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+  @keyframes bounce{0%,100%{transform:translateY(0)}30%{transform:translateY(-16px)}60%{transform:translateY(0)}80%{transform:translateY(-6px)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px) rotate(-4deg)}40%{transform:translateX(8px) rotate(4deg)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  @keyframes droop{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(4px) rotate(-6deg)}}
+  @keyframes wave{0%,100%{transform:rotate(0)}25%{transform:rotate(12deg)}75%{transform:rotate(-12deg)}}
+
+  #toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--panel);
+    border:1px solid var(--line);border-radius:10px;padding:10px 16px;z-index:100000;display:none;font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- ============ 登录/注册（AuthUI） ============ -->
+<div id="auth">
+  <div class="auth-card">
+    <h2>🐾 宠物聊天</h2>
+    <div class="sub">登录后创建你的 AI 电子宠物，并体验桌面宠物 + 实时聊天</div>
+    <label>服务器地址</label>
+    <input id="serverUrl" value="http://localhost:3000" />
+    <label>用户名</label>
+    <input id="username" placeholder="字母/数字/下划线，≥3位" />
+    <label id="dispLabel">昵称（注册时填）</label>
+    <input id="displayName" placeholder="显示名称" />
+    <label>密码（≥6位）</label>
+    <input id="password" type="password" />
+    <div class="row">
+      <button class="btn" id="btnLogin">登录</button>
+      <button class="btn ghost" id="btnRegister">注册</button>
+    </div>
+    <div class="switch">提示：用一个浏览器开两个窗口，分别注册 A/B 互加好友即可联调。</div>
+  </div>
+</div>
+
+<!-- ============ 主界面 ============ -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="side-head">
+      <div class="me" id="meName">—</div>
+      <div class="uid">我的ID: <span id="meId">—</span> <button class="btn ghost" style="padding:2px 6px;font-size:11px" id="copyId">复制</button></div>
+      <button class="btn ghost" style="margin-top:8px;width:100%" id="btnLogout">退出登录</button>
+    </div>
+    <div class="side-sec">
+      <h3>我的宠物</h3>
+      <div id="petBox" class="muted">加载中…</div>
+      <div id="petForm" style="display:none;margin-top:8px">
+        <input id="petName" placeholder="宠物名字" style="width:100%;margin-bottom:6px" />
+        <select id="petSpecies" style="width:100%;margin-bottom:6px">
+          <option value="cat">猫</option><option value="dog">狗</option>
+          <option value="fox">狐狸</option><option value="dragon">龙</option><option value="spirit">精灵</option>
+        </select>
+        <select id="petTrait" style="width:100%;margin-bottom:6px">
+          <option value="sweet">软萌</option><option value="tsundere">傲娇</option>
+          <option value="genki">元气</option><option value="calm">沉稳</option><option value="tsukkomi">毒舌</option>
+        </select>
+        <select id="petStyle" style="width:100%;margin-bottom:6px">
+          <option value="chibi">Q版</option><option value="realistic">写实</option>
+          <option value="pixel">像素</option><option value="cyber">赛博</option>
+        </select>
+        <button class="btn" id="btnCreatePet" style="width:100%">用 AI 生成我的宠物</button>
+      </div>
+    </div>
+    <div class="side-sec">
+      <h3>添加好友</h3>
+      <div class="friend-add">
+        <input id="friendId" placeholder="对方用户ID" />
+        <button class="btn" id="btnAddFriend">+</button>
+      </div>
+    </div>
+    <div class="conv" id="convList"></div>
+  </aside>
+
+  <section class="main">
+    <div class="main-head">
+      <div class="title" id="chatTitle">选择一个好友开始聊天</div>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="btnTogglePet">隐藏桌面宠物</button>
+    </div>
+    <div class="msgs" id="msgs"><div class="empty">← 从左侧选择好友，或添加好友后开始</div></div>
+    <div class="composer">
+      <input id="msgInput" placeholder="输入消息，回车发送（好友发来时桌面宠物会反应）" disabled />
+      <button class="btn" id="btnSend" disabled>发送</button>
+    </div>
+  </section>
+</div>
+
+<!-- ============ 桌面悬浮宠物（桌面层） ============ -->
+<div id="deskpet">
+  <div class="bubble-pet" id="petBubble"></div>
+  <div class="pet-img idle" id="petImg"><span style="font-size:40px">🐾</span></div>
+  <div class="pet-name" id="petLabel">宠物</div>
+  <button class="mini" id="petMini">1</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* =====================================================================
+ * 客户端实现 —— 按架构"客户端模块"划分：
+ *   1) Config/State      全局配置与状态
+ *   2) API               REST 调用封装（账号/宠物/消息）
+ *   3) AuthUI            登录注册界面
+ *   4) PetModule         宠物档案（创建/加载/渲染）
+ *   5) ChatModule        聊天层（好友/会话/历史/发送）
+ *   6) PetEngine         宠物引擎：动作状态机（ActionType → 动画）
+ *   7) DesktopPet        桌面层：悬浮窗渲染 + 拖动 + 反应气泡
+ *   8) IMService         WebSocket 实时 IM（聊天层网络）
+ * 各模块职责单一、通过事件/函数解耦，与后端接口契约一致。
+ * ===================================================================== */
+
+/* ---------- 1) Config / State ---------- */
+const State = {
+  token: null, user: null,
+  pets: [], activePet: null,
+  friends: [], activeFriend: null, activeFriendName: '',
+  messages: [], ws: null, wsRetry: 0,
+};
+function apiBase(){ return (document.getElementById('serverUrl').value || '').replace(/\/$/,''); }
+function wsBase(){ return apiBase().replace(/^http/, 'ws'); }
+
+/* ---------- 2) API ---------- */
+async function api(path, opts = {}) {
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  if (State.token) headers['Authorization'] = 'Bearer ' + State.token;
+  const res = await fetch(apiBase() + path, { ...opts, headers });
+  let data = null;
+  try { data = await res.json(); } catch { /* no body */ }
+  if (!res.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
+  return data;
+}
+
+/* ---------- 3) AuthUI ---------- */
+const $ = (id) => document.getElementById(id);
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.style.display='block';
+  clearTimeout(t._t); t._t=setTimeout(()=>t.style.display='none',2600); }
+
+function showAuth(){ $('auth').style.display='grid'; $('app').style.display='none'; }
+function showApp(){ $('auth').style.display='none'; $('app').style.display='grid'; }
+
+async function doLogin(){
+  try{
+    const data = await api('/api/auth/login', { method:'POST', body: JSON.stringify({
+      username: $('username').value.trim(), password: $('password').value })});
+    State.token = data.token; State.user = data.user;
+    onLoggedIn();
+  }catch(e){ toast('登录失败: '+e.message); }
+}
+async function doRegister(){
+  try{
+    const data = await api('/api/auth/register', { method:'POST', body: JSON.stringify({
+      username: $('username').value.trim(),
+      displayName: $('displayName').value.trim() || $('username').value.trim(),
+      password: $('password').value })});
+    State.token = data.token; State.user = data.user;
+    onLoggedIn();
+  }catch(e){ toast('注册失败: '+e.message); }
+}
+async function doLogout(){
+  try{ await api('/api/auth/logout', { method:'POST' }); }catch{}
+  State.token=null; State.user=null; State.pets=[]; State.activePet=null;
+  if(State.ws) State.ws.close();
+  DesktopPet.hide(); showAuth();
+}
+
+async function onLoggedIn(){
+  showApp();
+  $('meName').textContent = State.user.displayName;
+  $('meId').textContent = State.user.id;
+  await PetModule.load();
+  await ChatModule.loadFriends();
+  await ChatModule.loadConversations();
+  IMService.connect();
+}
+
+/* ---------- 4) PetModule（宠物档案） ---------- */
+const PetModule = {
+  async load(){
+    try{
+      const data = await api('/api/pets/mine');
+      State.pets = data.pets || [];
+      State.activePet = State.pets[0] || null;
+      this.render();
+      if(State.activePet) DesktopPet.setPet(State.activePet);
+    }catch(e){ toast('加载宠物失败: '+e.message); }
+  },
+  render(){
+    const box = $('petBox'), form = $('petForm');
+    if(State.pets.length === 0){ box.innerHTML = '<span class="muted">还没有宠物，下面创建一个 ✨</span>'; form.style.display='block'; return; }
+    form.style.display='none';
+    box.innerHTML = State.pets.map(p =>
+      `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+         <img src="${p.imageUrl}" width="40" height="40" style="border-radius:8px;object-fit:cover"/>
+         <div><div style="font-weight:600">${esc(p.name)}</div>
+         <div class="muted">${esc(p.trait)} · ${esc(p.style)}</div></div>
+       </div>`).join('');
+  },
+  async create(){
+    const name = $('petName').value.trim();
+    if(!name){ toast('请给宠物起个名字'); return; }
+    try{
+      await api('/api/pets', { method:'POST', body: JSON.stringify({
+        name, species:$('petSpecies').value, trait:$('petTrait').value, style:$('petStyle').value })});
+      toast('宠物已生成 🎉');
+      await this.load();
+    }catch(e){ toast('创建失败: '+e.message); }
+  }
+};
+
+/* ---------- 5) ChatModule（聊天层） ---------- */
+const ChatModule = {
+  async loadFriends(){ try{ const d=await api('/api/auth/friends'); State.friends=d.friends||[]; }catch(e){ toast('好友加载失败: '+e.message);} },
+  async loadConversations(){
+    try{
+      const d = await api('/api/messages/conversations');
+      const list = $('convList');
+      if(!d.conversations.length){ list.innerHTML='<div class="muted" style="padding:14px">暂无会话，先添加好友</div>'; return; }
+      list.innerHTML = d.conversations.map(c =>
+        `<div class="conv-item ${State.activeFriend===c.friendId?'active':''}" data-id="${c.friendId}">
+           <div class="name">${esc(c.friendName)}</div>
+           <div class="last">${esc(c.lastMessage||'')}</div>
+         </div>`).join('');
+      list.querySelectorAll('.conv-item').forEach(el=>{
+        el.onclick = ()=> this.openConversation(el.dataset.id, el.querySelector('.name').textContent);
+      });
+    }catch(e){ toast('会话加载失败: '+e.message); }
+  },
+  async openConversation(friendId, friendName){
+    State.activeFriend = friendId; State.activeFriendName = friendName || friendId;
+    $('chatTitle').textContent = '与 ' + State.activeFriendName + ' 聊天';
+    $('msgInput').disabled = false; $('btnSend').disabled = false;
+    $('petMini').classList.remove('show'); $('petMini').textContent='0';
+    await this.loadHistory(friendId);
+    this.render();
+    this.loadConversations();
+  },
+  async loadHistory(friendId){
+    try{
+      const d = await api('/api/messages?with=' + encodeURIComponent(friendId));
+      State.messages = d.messages || [];
+    }catch(e){ toast('历史加载失败: '+e.message); State.messages=[]; }
+  },
+  render(){
+    const box = $('msgs');
+    if(!State.activeFriend){ box.innerHTML='<div class="empty">← 选择一个好友</div>'; return; }
+    if(!State.messages.length){ box.innerHTML='<div class="empty">还没有消息，发一条试试 💬</div>'; return; }
+    box.innerHTML = State.messages.map(m => {
+      const me = m.from === State.user.id;
+      const who = me ? '我' : State.activeFriendName;
+      return `<div class="bubble ${me?'me':'them'}">
+                <div class="who">${esc(who)}</div>${esc(m.text)}</div>`;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+  },
+  async addFriend(){
+    const id = $('friendId').value.trim();
+    if(!id){ toast('请输入对方ID'); return; }
+    try{ await api('/api/auth/friends', { method:'POST', body: JSON.stringify({ friendId:id }) });
+      toast('已添加好友 ✅'); $('friendId').value=''; await this.loadFriends(); await this.loadConversations(); }
+    catch(e){ toast('添加失败: '+e.message); }
+  },
+  send(text){
+    text = (text||'').trim();
+    if(!text || !State.activeFriend) return;
+    IMService.send({ type:'message', to: State.activeFriend, text });
+  }
+};
+
+/* ---------- 6) PetEngine（宠物引擎：动作状态机） ---------- */
+// 将后端下发的 ActionType 映射到动画 class；非 idle 动作播放后自动回到 idle。
+const PetEngine = {
+  ACTION_CLASSES: ['idle','happy','surprised','thinking','sad','greeting'],
+  _timer: null,
+  apply(imgEl, action){
+    const cls = (this.ACTION_CLASSES.includes(action) ? action : 'surprised');
+    this.ACTION_CLASSES.forEach(c => imgEl.classList.remove(c));
+    // 触发重排以重启动画
+    void imgEl.offsetWidth;
+    imgEl.classList.add(cls);
+    clearTimeout(this._timer);
+    if(cls !== 'idle'){
+      this._timer = setTimeout(()=>{ imgEl.classList.remove(cls); imgEl.classList.add('idle'); }, 1800);
+    }
+  }
+};
+
+/* ---------- 7) DesktopPet（桌面层） ---------- */
+const DesktopPet = {
+  el: null, img: null, bubble: null, label: null, mini: null, dragging:false,
+  init(){
+    this.el=$('deskpet'); this.img=$('petImg'); this.bubble=$('petBubble');
+    this.label=$('petLabel'); this.mini=$('petMini');
+    this.makeDraggable();
+  },
+  setPet(pet){
+    this.label.textContent = pet.name;
+    this.img.innerHTML = `<img src="${pet.imageUrl}" alt="${esc(pet.name)}"/>`;
+    this.img.classList.remove(...PetEngine.ACTION_CLASSES); this.img.classList.add('idle');
+    this.show();
+  },
+  show(){ this.el.style.display='flex'; },
+  hide(){ this.el.style.display='none'; },
+  // 收到消息时：切换动作 + 显示反应气泡（架构核心：消息触发桌面宠物反应）
+  react(reaction){
+    if(!reaction) return;
+    PetEngine.apply(this.img, reaction.action);
+    if(reaction.text){
+      this.bubble.textContent = reaction.text;
+      this.bubble.classList.add('show');
+      clearTimeout(this._bt); this._bt=setTimeout(()=>this.bubble.classList.remove('show'), 4000);
+    }
+    // 若聊天面板未聚焦该好友，标小红点
+    if(State.activeFriend !== (State._lastSender)){
+      const n = parseInt(this.mini.textContent||'0',10)+1;
+      this.mini.textContent = n; this.mini.classList.add('show');
+    }
+  },
+  makeDraggable(){
+    let sx=0, sy=0, ox=0, oy=0;
+    const onDown=(e)=>{ this.dragging=true; const p=pt(e); sx=p.x; sy=p.y;
+      const r=this.el.getBoundingClientRect(); ox=r.left; oy=r.top;
+      this.el.style.right='auto'; this.el.style.bottom='auto';
+      this.el.style.left=ox+'px'; this.el.style.top=oy+'px';
+      window.addEventListener('pointermove',onMove); window.addEventListener('pointerup',onUp); };
+    const onMove=(e)=>{ if(!this.dragging)return; const p=pt(e);
+      this.el.style.left=(ox+(p.x-sx))+'px'; this.el.style.top=(oy+(p.y-sy))+'px'; };
+    const onUp=()=>{ this.dragging=false;
+      window.removeEventListener('pointermove',onMove); window.removeEventListener('pointerup',onUp); };
+    this.img.addEventListener('pointerdown', onDown);
+    // 点击宠物：若在看别的会话，跳回最近消息来源
+    this.el.addEventListener('click',()=>{ if(this.mini.classList.contains('show')){ /* 由用户自行选择会话 */ toast('有 ' + this.mini.textContent + ' 条新消息，去左侧查看'); } });
+  }
+};
+function pt(e){ return { x:e.clientX, y:e.clientY }; }
+
+/* ---------- 8) IMService（WebSocket 实时 IM） ---------- */
+const IMService = {
+  connect(){
+    if(State.ws && (State.ws.readyState===1 || State.ws.readyState===0)) return;
+    const ws = new WebSocket(wsBase() + '/ws?token=' + encodeURIComponent(State.token));
+    State.ws = ws;
+    ws.onopen = ()=>{ State.wsRetry=0; toast('已连接实时聊天'); };
+    ws.onmessage = (ev)=>{ try{ this.handle(JSON.parse(ev.data)); }catch(e){ console.warn(e); } };
+    ws.onclose = ()=>{ if(State.token){ const d=Math.min(8000, 1000*(2**State.wsRetry++)); setTimeout(()=>this.connect(), d); } };
+    ws.onerror = ()=>{ try{ ws.close(); }catch{} };
+  },
+  send(obj){ if(State.ws && State.ws.readyState===1) State.ws.send(JSON.stringify(obj)); else toast('连接未就绪'); },
+  handle(msg){
+    if(msg.type==='message'){
+      State._lastSender = msg.from;
+      // 桌面宠物反应（接收方自己的宠物）
+      DesktopPet.react(msg.reaction);
+      // 若正在与该好友聊天，则入聊天窗
+      if(State.activeFriend === msg.from){
+        State.messages.push({ id:msg.id, from:msg.from, text:msg.text, createdAt:msg.createdAt });
+        ChatModule.render();
+      }
+      ChatModule.loadConversations();
+    } else if(msg.type==='message_ack'){
+      // 发送方本地落一条自己的消息
+      if(State.activeFriend === msg.to){
+        State.messages.push({ id:msg.id, from:State.user.id, text:msg.text, createdAt:msg.createdAt });
+        ChatModule.render();
+      }
+    } else if(msg.type==='error'){
+      toast('IM: '+msg.error);
+    }
+  }
+};
+
+/* ---------- 工具 ---------- */
+function esc(s){ return String(s==null?'':s).replace(/[<>&"']/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- 事件绑定 ---------- */
+window.addEventListener('DOMContentLoaded', ()=>{
+  DesktopPet.init();
+  $('btnLogin').onclick = doLogin;
+  $('btnRegister').onclick = doRegister;
+  $('btnLogout').onclick = doLogout;
+  $('btnCreatePet').onclick = ()=>PetModule.create();
+  $('btnAddFriend').onclick = ()=>ChatModule.addFriend();
+  $('btnSend').onclick = ()=>{ ChatModule.send($('msgInput').value); $('msgInput').value=''; };
+  $('msgInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){ ChatModule.send($('msgInput').value); $('msgInput').value=''; } });
+  $('copyId').onclick = ()=>{ navigator.clipboard && navigator.clipboard.writeText(State.user.id); toast('已复制我的ID'); };
+  $('btnTogglePet').onclick = ()=>{ const hidden=DesktopPet.el.style.display==='none';
+    if(hidden){ DesktopPet.show(); $('btnTogglePet').textContent='隐藏桌面宠物'; }
+    else { DesktopPet.hide(); $('btnTogglePet').textContent='显示桌面宠物'; } };
+  showAuth();
+});
+</script>
+</body>
+</html>
