@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- 与 WaterBackground 一致：上浅下蓝的清水渐变，避免启动/页面切换时的深色闪烁 -->
+    <gradient
+        android:angle="270"
+        android:startColor="#EAF7FF"
+        android:centerColor="#B6E3FF"
+        android:endColor="#9BD6FF"
+        android:centerY="0.5" />
+</shape>
