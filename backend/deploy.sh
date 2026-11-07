@@ -77,8 +77,9 @@ fi
 # 5) 常驻启动：优先 pm2；装不上则 nohup 兜底，确保服务先跑起来
 echo "[5/5] 启动服务 ..."
 pkill -f "node src/server.js" 2>/dev/null || true
-if npm install -g pm2 >/dev/null 2>&1 && command -v pm2 >/dev/null 2>&1; then
-  pm2 start src/server.js --name petchat
+if $SUDO npm install -g pm2 >/dev/null 2>&1 \
+   && command -v pm2 >/dev/null 2>&1 \
+   && pm2 start src/server.js --name petchat >/dev/null 2>&1; then
   pm2 save >/dev/null 2>&1 || true
   pm2 startup >/dev/null 2>&1 || true
   echo "   已用 pm2 常驻（日志: pm2 logs petchat）"
