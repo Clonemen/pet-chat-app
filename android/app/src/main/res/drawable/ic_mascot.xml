@@ -1,0 +1,58 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- 耳朵（外） -->
+    <path
+        android:fillColor="#6EA8FE"
+        android:pathData="M30 44 L18 12 L48 30 Z" />
+    <path
+        android:fillColor="#6EA8FE"
+        android:pathData="M90 44 L102 12 L72 30 Z" />
+    <!-- 耳朵（内） -->
+    <path
+        android:fillColor="#BFD6FF"
+        android:pathData="M33 38 L27 22 L42 31 Z" />
+    <path
+        android:fillColor="#BFD6FF"
+        android:pathData="M87 38 L93 22 L78 31 Z" />
+    <!-- 脸 -->
+    <path
+        android:fillColor="#8FB8FF"
+        android:pathData="M20,66 a40,40 0 1,0 80,0 a40,40 0 1,0 -80,0 Z" />
+    <!-- 腮红 -->
+    <path
+        android:fillColor="#FF9DBB"
+        android:alpha="0.75"
+        android:pathData="M33,76 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z" />
+    <path
+        android:fillColor="#FF9DBB"
+        android:alpha="0.75"
+        android:pathData="M73,76 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z" />
+    <!-- 眼睛 -->
+    <path
+        android:fillColor="#0F1115"
+        android:pathData="M42.5,62 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z" />
+    <path
+        android:fillColor="#0F1115"
+        android:pathData="M66.5,62 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z" />
+    <!-- 眼睛高光 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48.2,60 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M72.2,60 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0 Z" />
+    <!-- 鼻子 -->
+    <path
+        android:fillColor="#FF7AA0"
+        android:pathData="M57 72 L63 72 L60 77 Z" />
+    <!-- 嘴 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#0F1115"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M60 77 Q54 84 48 80 M60 77 Q66 84 72 80" />
+</vector>
