@@ -1,0 +1,21 @@
+{
+  "name": "pet-chat-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "宠物聊天 App 云端后端：账号/宠物档案/实时IM/AI反应/文生图代理",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  },
+  "optionalDependencies": {
+    "pg": "^8.11.0"
+  }
+}
