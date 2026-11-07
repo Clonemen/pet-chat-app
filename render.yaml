@@ -1,0 +1,29 @@
+# Render Blueprint：一键部署「宠物聊天后端」+ 配套 Postgres 数据库。
+# 用法：把 pet-chat-app 作为 Git 仓库推到 GitHub，在 Render 选择 “New” → “Blueprint” → 关联该仓库即可。
+# 部署完成后会得到一个 https 地址（如 https://pet-chat-backend.onrender.com），把它填到 App 的服务器地址。
+databases:
+  - name: petchat-db
+    databaseName: petchat
+    user: petchat
+    plan: free
+
+services:
+  - type: web
+    name: pet-chat-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: petchat-db
+          property: connectionString
+      # 开发/测试期：true 表示把验证码直接回传给 App（弹 Toast 显示），无需真实短信服务商。
+      # 正式上线前务必改为 "false"，并接入阿里云/腾讯云/Twilio 等真实短信服务（见 store.js 注释）。
+      - key: SMS_DEV
+        value: "true"
+      - key: NODE_ENV
+        value: production
