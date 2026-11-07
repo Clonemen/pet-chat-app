@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 悬浮窗（桌面宠物必须）：特殊权限，需跳转系统设置手动授权 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- 前台服务（保证宠物后台常驻） -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Android 13+ 发送通知 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 网络 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 相机（扫码添加好友） -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- 请求"忽略电池优化"，防止 ROM 激进省电杀掉宠物后台 -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.PetChat"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true">
+
+        <!-- 悬浮宠物前台服务：使用 specialUse 类型（无标准类型匹配"桌面陪伴"场景）。
+             stopWithTask=false：用户划掉 App 最近任务时服务继续后台运行 -->
+        <service
+            android:name=".floating.FloatingPetService"
+            android:exported="false"
+            android:stopWithTask="false"
+            android:foregroundServiceType="specialUse" />
+
+        <!-- 悬浮宠物无障碍服务：仅作为 TYPE_ACCESSIBILITY_OVERLAY 系统级悬浮图层的宿主，
+             不监听无障碍事件、不读取窗口内容。开启后宠物在退后台/回到桌面时依然可见
+             （部分 ROM 会隐藏后台应用的普通悬浮窗）。 -->
+        <service
+            android:name=".floating.PetOverlayA11yService"
+            android:exported="true"
+            android:label="@string/a11y_pet_overlay_title"
+            android:permission="BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/pet_overlay_a11y_config" />
+        </service>
+
+        <!-- 宠物远程控制台（调试/自动化）：显式广播启动或关闭悬浮宠物，绕过锁屏 UI -->
+        <receiver
+            android:name=".floating.PetControlReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.petchat.app.action.START_PET" />
+                <action android:name="com.petchat.app.action.STOP_PET" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 启动闪屏：先展示水滴动画 + 欢迎文案，再进入登录页 -->
+        <activity
+            android:name=".ui.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.PetChat.Splash"
+            android:configChanges="orientation|screenSize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.ChatListActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.ChatActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.SettingsActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize" />
+
+        <activity
+            android:name=".ui.PetProfileActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 扫码添加好友：相机扫码 + 我的二维码 -->
+        <activity
+            android:name=".ui.QrFriendActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize" />
+
+        <!-- specialUse 前台服务的子类型说明（Android 14+ 必需） -->
+        <property
+            android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+            android:value="桌面电子宠物常驻陪伴" />
+    </application>
+
+</manifest>
