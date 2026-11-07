@@ -1,0 +1,25 @@
+# ===== Android 构建产物 =====
+android/.gradle/
+android/**/build/
+android/local.properties
+*.apk
+*.aar
+android/captures/
+
+# ===== 后端 =====
+backend/node_modules/
+# 本地开发数据（云端用 Postgres，不入库）
+backend/data.json
+backend/.env
+*.log
+
+# ===== AI/临时产物 =====
+# 图片抠图中间产物（git 递归匹配任意层级）
+processed_image_*.png
+*.tmp
+
+# ===== 系统/IDE =====
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
