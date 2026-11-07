@@ -1,0 +1,17 @@
+<resources>
+    <!-- 主主题：透明水纹式（浅水色 + 浅色状态栏深色图标） -->
+    <style name="Theme.PetChat" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@drawable/water_bg</item>
+        <item name="android:statusBarColor">#9BD6FF</item>
+        <item name="android:navigationBarColor">#9BD6FF</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- 启动闪屏主题：浅蓝水色背景 + 浅色状态栏（深色图标/文字） -->
+    <style name="Theme.PetChat.Splash" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_bg</item>
+        <item name="android:statusBarColor">#A9DEFF</item>
+        <item name="android:navigationBarColor">#A9DEFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>
