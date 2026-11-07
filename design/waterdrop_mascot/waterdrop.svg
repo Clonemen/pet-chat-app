@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
+  <defs>
+    <linearGradient id="wd" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#A6EBFF"/>
+      <stop offset="0.55" stop-color="#46B6F0"/>
+      <stop offset="1" stop-color="#1E8FE0"/>
+    </linearGradient>
+  </defs>
+  <!-- 水滴身体（圆形水滴：上部收成小尖，下部圆润） -->
+  <path d="M54 20 C 54 20 84 44 84 58 A 30 30 0 1 1 24 58 C 24 44 54 20 54 20 Z"
+        fill="url(#wd)" stroke="#1B7FC4" stroke-width="2"/>
+  <!-- 水光高亮 -->
+  <g transform="rotate(-18 42 35)">
+    <ellipse cx="42" cy="35" rx="6.5" ry="9" fill="#FFFFFF" opacity="0.42"/>
+  </g>
+  <!-- 腮红 -->
+  <circle cx="36" cy="68" r="5" fill="#FF9EB5" opacity="0.55"/>
+  <circle cx="72" cy="68" r="5" fill="#FF9EB5" opacity="0.55"/>
+  <!-- 眼白 -->
+  <ellipse cx="44" cy="56" rx="9" ry="11" fill="#FFFFFF"/>
+  <ellipse cx="64" cy="56" rx="9" ry="11" fill="#FFFFFF"/>
+  <!-- 瞳孔（微微向下看，呆萌） -->
+  <circle cx="45" cy="58" r="5" fill="#22364A"/>
+  <circle cx="63" cy="58" r="5" fill="#22364A"/>
+  <!-- 眼睛高光 -->
+  <circle cx="47" cy="56" r="1.6" fill="#FFFFFF"/>
+  <circle cx="65" cy="56" r="1.6" fill="#FFFFFF"/>
+  <!-- 嘴巴：小小的呆萌微笑 -->
+  <path d="M46 72 Q54 79 62 72" fill="none" stroke="#22364A" stroke-width="3" stroke-linecap="round"/>
+</svg>
