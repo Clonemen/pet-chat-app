@@ -111,6 +111,24 @@ backend/
 4. `railway up` 部署；`railway.json` 已配置构建/启动/健康检查。
 5. 部署完成后在 Railway 控制台拿到域名（如 `https://pet-chat-backend.up.railway.app`）。
 
+### 方式三：国内云服务器（阿里云 / 腾讯云轻量应用服务器）
+
+适合国内网络、追求 24h 稳定在线、且希望数据本地可控的场景。云服务器（VPS，非临时容器）磁盘是持久的，**直接用 `data.json` 即可持久化，无需 Postgres**。
+
+1. 购买一台轻量应用服务器（Ubuntu / Debian 镜像，1 核 1G 起步够用），记下**公网 IP**。
+2. 在云厂商控制台【安全组 / 防火墙】放行 **TCP 3000 入站**（若后续用 Nginx 反代 + 域名，则放行 80/443）。
+3. SSH 登录服务器，执行一键部署脚本（自动装 Node18、拉代码、装依赖、放通本地防火墙、用 pm2 常驻）：
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/Clonemen/pet-chat-app/master/backend/deploy.sh | bash
+   # 或 git clone 后手动： bash backend/deploy.sh
+   ```
+   若 GitHub 拉取慢，可用 `REPO_URL=你的镜像地址 bash deploy.sh`。
+4. 看到 `🐾 宠物聊天后端已启动` 即成功。日志：`pm2 logs petchat`，重启：`pm2 restart petchat`。
+5. 手机 App 服务器地址填 `http://<公网IP>:3000`（http 明文已获 Android 放行）。
+
+> 数据：VPS 磁盘持久，用户/宠物/消息存 `backend/data.json`，重启不丢。若日后需要多实例或自动备份，再按上文启用 Postgres（设置 `DATABASE_URL`）。
+> 进阶（可选）：用 Nginx 反代 + 域名 + 免费证书，把 `http://IP:3000` 升级为 `https://你的域名`，更安全且规避部分网络对裸 IP:端口 的限制。
+
 ### 部署后必做
 
 - **App 服务器地址**：把 Android 登录页「高级选项」里的服务器地址改为云地址（如 `https://pet-chat-backend.onrender.com`）；或把 `MainActivity.kt` 的默认 `serverBase` 改成该地址后重新打包，这样无需每次手动填。
