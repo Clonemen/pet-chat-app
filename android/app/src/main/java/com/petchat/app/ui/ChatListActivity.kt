@@ -145,68 +145,84 @@ private fun ChatListScreen(
     var selectedTab by remember { mutableStateOf(0) } // 0 = 我的好友（首屏），1 = 宠物管理
 
     Scaffold(
+        containerColor = Color.Transparent,
         bottomBar = {
-            NavigationBar(
-                containerColor = Color.White.copy(alpha = 0.34f),
-                tonalElevation = 0.dp
+            // 悬浮胶囊液态玻璃导航栏：整条栏是一块可折射的玻璃镜片，
+            // 半透明底色让背后流动的光斑透出来，选中项呈内嵌镜片感。
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = {
-                        Image(
-                            painter = painterResource(R.drawable.ic_friends),
-                            contentDescription = "我的好友",
-                            modifier = Modifier.size(26.dp)
+                GlassSurface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(999.dp),
+                    elevation = 22.dp
+                ) {
+                    NavigationBar(
+                        modifier = Modifier.height(64.dp),
+                        containerColor = Color.Transparent,
+                        tonalElevation = 0.dp
+                    ) {
+                        NavigationBarItem(
+                            selected = selectedTab == 0,
+                            onClick = { selectedTab = 0 },
+                            icon = {
+                                Image(
+                                    painter = painterResource(R.drawable.ic_friends),
+                                    contentDescription = "我的好友",
+                                    modifier = Modifier.size(if (selectedTab == 0) 30.dp else 26.dp)
+                                )
+                            },
+                            label = { Text("我的好友") },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = Color.White.copy(alpha = 0.42f),
+                                unselectedIconColor = MaterialTheme.colorScheme.secondary,
+                                unselectedTextColor = MaterialTheme.colorScheme.secondary
+                            )
                         )
-                    },
-                    label = { Text("我的好友") },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                        unselectedIconColor = MaterialTheme.colorScheme.secondary,
-                        unselectedTextColor = MaterialTheme.colorScheme.secondary
-                    )
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = {
-                        Image(
-                            painter = painterResource(R.drawable.ic_pet_mascot),
-                            contentDescription = "我的宠物",
-                            modifier = Modifier.size(26.dp)
+                        NavigationBarItem(
+                            selected = selectedTab == 1,
+                            onClick = { selectedTab = 1 },
+                            icon = {
+                                Image(
+                                    painter = painterResource(R.drawable.ic_pet_mascot),
+                                    contentDescription = "我的宠物",
+                                    modifier = Modifier.size(if (selectedTab == 1) 30.dp else 26.dp)
+                                )
+                            },
+                            label = { Text("我的宠物") },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = Color.White.copy(alpha = 0.42f),
+                                unselectedIconColor = MaterialTheme.colorScheme.secondary,
+                                unselectedTextColor = MaterialTheme.colorScheme.secondary
+                            )
                         )
-                    },
-                    label = { Text("我的宠物") },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                        unselectedIconColor = MaterialTheme.colorScheme.secondary,
-                        unselectedTextColor = MaterialTheme.colorScheme.secondary
-                    )
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    icon = {
-                        Image(
-                            painter = painterResource(R.drawable.ic_manage),
-                            contentDescription = "宠物管理",
-                            modifier = Modifier.size(26.dp)
+                        NavigationBarItem(
+                            selected = selectedTab == 2,
+                            onClick = { selectedTab = 2 },
+                            icon = {
+                                Image(
+                                    painter = painterResource(R.drawable.ic_manage),
+                                    contentDescription = "宠物管理",
+                                    modifier = Modifier.size(if (selectedTab == 2) 30.dp else 26.dp)
+                                )
+                            },
+                            label = { Text("宠物管理") },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = Color.White.copy(alpha = 0.42f),
+                                unselectedIconColor = MaterialTheme.colorScheme.secondary,
+                                unselectedTextColor = MaterialTheme.colorScheme.secondary
+                            )
                         )
-                    },
-                    label = { Text("宠物管理") },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                        unselectedIconColor = MaterialTheme.colorScheme.secondary,
-                        unselectedTextColor = MaterialTheme.colorScheme.secondary
-                    )
-                )
+                    }
+                }
             }
         }
     ) { innerPadding ->
