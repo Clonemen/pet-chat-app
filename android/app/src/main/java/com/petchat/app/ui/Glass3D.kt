@@ -44,6 +44,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
@@ -61,39 +62,42 @@ import androidx.compose.ui.window.PopupProperties
 
 /*
  * ============================================================================
- *  3D 玻璃组件库（Glass 3D Kit）
+ *  Liquid Glass 组件库（液态玻璃）
  * ----------------------------------------------------------------------------
- *  在「透明水纹式」主题之上，统一所有按钮 / 对话框 / 菜单 / 输入框的立体玻璃质感：
+ *  在「流动光斑背景」（见 theme.kt）之上，统一所有按钮 / 卡片 / 对话框 / 菜单 /
+ *  输入框的液态玻璃质感：
  *   · 玻璃底     —— 竖向渐变（顶部亮、底部沉），模拟玻璃厚度与透光
- *   · 顶部反光   —— 白色柔光层 + 左上角镜面光斑（drawWithCache）
- *   · 底部内阴影 —— 底部压深，制造「厚度」与立体感
- *   · 玻璃边缘   —— 1~1.4dp 高光描边
+ *   · 透镜 warp  —— 中心微亮、边缘微沉的径向渐变，模拟曲面折射
+ *   · 动态扫光   —— 一条斜向镜面高光周期性划过玻璃表面
+ *   · 表面涟漪   —— 随扫光扩散的极细同心弧线（ripple）
+ *   · 色散边缘   —— 彩虹渐变外圈 + 白色 rim 内圈，模拟镜片边缘的光学色散
  *   · 立体投影   —— 带主色色相的柔和外阴影（spot / ambient）
  *   · 按压反馈   —— 按下时缩放 + 投影收缩，形成物理按压手感
  *
- *  所有视觉参数集中在 [GlassStyle]，改一处即可全 App 统一调档。
+ *  Android 10（API 29）没有 RenderEffect，所有效果均由 Canvas 绘制；动画进度
+ *  在 draw 阶段读取 State，只重绘不重组。参数集中在 [GlassStyle]。
  * ============================================================================
  */
 
 /* ============================== 全局质感参数 ============================== */
 
 /**
- * 全局玻璃质感参数（通透度 / 反光 / 圆角）。
+ * 全局液态玻璃质感参数（通透度 / 反光 / 色散 / 圆角）。
  *
- * 当前档位：**更通透 + 反光更聚拢 + 更圆润**
- *  - 通透：面板/按钮底色不透明度整体下调约 15%，背景水纹能明显透出；
- *  - 反光：顶部柔光带收窄变亮、镜面光斑缩小提亮（更像真玻璃的"点高光"而非"整体发白"）；
- *  - 圆润：按钮与面板圆角统一上调，轮廓更软萌。
+ * 液态档位：**高通透 + 动态扫光 + 显式色散**
+ *  - 通透：面板/按钮底色整体下调，背后流动光斑与折射等高线能明显透出；
+ *  - 扫光：镜面高光周期性划过表面，配合涟漪与透镜 warp 制造「液态」感；
+ *  - 色散：边缘彩虹圈比旧版更清晰，形成镜片边缘的光学折射。
  */
 object GlassStyle {
 
     /* ---------- 面板（对话框 / 菜单 / 卡片底） ---------- */
 
     /** 面板顶部玻璃不透明度（越低越通透） */
-    val PANEL_TOP_ALPHA = 0.72f
+    val PANEL_TOP_ALPHA = 0.54f
 
     /** 面板底部玻璃不透明度 */
-    val PANEL_BOTTOM_ALPHA = 0.40f
+    val PANEL_BOTTOM_ALPHA = 0.26f
 
     /** 面板高光描边不透明度 */
     val PANEL_EDGE_ALPHA = 0.95f
@@ -109,8 +113,8 @@ object GlassStyle {
 
     /* ---------- 反光层 ---------- */
 
-    /** 顶部柔光带峰值不透明度（收窄但更亮 → 更像"点高光"） */
-    val GLOSS_ALPHA = 0.62f
+    /** 顶部柔光带峰值不透明度（压低，避免玻璃整体发白） */
+    val GLOSS_ALPHA = 0.50f
 
     /** 顶部柔光带的衰减跨度（越小越集中） */
     val GLOSS_SPREAD = 0.26f
@@ -136,16 +140,16 @@ object GlassStyle {
     val BTN_BOTTOM_DARKEN = 0.16f
 
     /** 次按钮底色（半透明白玻璃） */
-    val OUTLINE_TOP_ALPHA = 0.60f
-    val OUTLINE_BOTTOM_ALPHA = 0.26f
+    val OUTLINE_TOP_ALPHA = 0.46f
+    val OUTLINE_BOTTOM_ALPHA = 0.18f
 
     /** 文字按钮底色 */
-    val TEXT_TOP_ALPHA = 0.52f
-    val TEXT_BOTTOM_ALPHA = 0.18f
+    val TEXT_TOP_ALPHA = 0.42f
+    val TEXT_BOTTOM_ALPHA = 0.12f
 
     /** 图标按钮底色 */
-    val ICON_TOP_ALPHA = 0.66f
-    val ICON_BOTTOM_ALPHA = 0.26f
+    val ICON_TOP_ALPHA = 0.52f
+    val ICON_BOTTOM_ALPHA = 0.18f
 
     /** 按钮高光描边不透明度 */
     val BTN_EDGE_ALPHA = 0.70f
@@ -158,6 +162,26 @@ object GlassStyle {
 
     /** 输入框圆角 */
     val FIELD_RADIUS = 16.dp
+
+    /* ---------- 液态玻璃新增：折射 / 色散 / 扫光 ---------- */
+
+    /** 色散边缘（彩虹圈）宽度 */
+    val RIM_WIDTH = 1.8.dp
+
+    /** 色散边缘整体不透明度（越高越像真实镜片折射） */
+    val DISPERSION_ALPHA = 0.80f
+
+    /** 中心透镜高光强度 */
+    val LENS_ALPHA = 0.20f
+
+    /** 透镜边缘压深强度 */
+    val WARP_ALPHA = 0.10f
+
+    /** 斜向扫过镜面高光的峰值不透明度 */
+    val SWEEP_ALPHA = 0.40f
+
+    /** 表面涟漪强度 */
+    val RIPPLE_ALPHA = 0.22f
 }
 
 /* ============================== 颜色工具 ============================== */
@@ -176,40 +200,107 @@ private fun Color.darken(f: Float): Color = Color(
     alpha = alpha
 )
 
-/* ============================== 玻璃反光层 ============================== */
+/* ============================== 液态玻璃反光层 ============================== */
 
 /**
- * 玻璃反光层：顶部柔光带 + 底部内阴影 + 左上角镜面光斑。
- * 叠加在玻璃底色之上，塑造「有厚度的透明玻璃」立体感。
+ * 液态玻璃反光层：顶部柔光带 + 底部内阴影 + 中心透镜 warp + 周期扫过的镜面高光
+ * + 表面涟漪 + 左上角点高光。
  *
- * 相比初版：柔光带更窄更亮、镜面光斑更小更集中、底部阴影更浅 → 通透而不发白。
+ * 扫光进度从 [LocalLiquidSweep] 以 State 形式取得，并在 `onDrawBehind` 里读取
+ * —— 只在 draw 阶段取值，动画每帧只重绘、不触发任何重组。
  */
-private fun Modifier.glassSheen(strength: Float = 1f): Modifier = drawWithCache {
-    val topGloss = Brush.verticalGradient(
-        0f to Color.White.copy(alpha = GlassStyle.GLOSS_ALPHA * strength),
-        GlassStyle.GLOSS_SPREAD to Color.White.copy(alpha = 0.12f * strength),
-        0.62f to Color.Transparent
-    )
-    val bottomShade = Brush.verticalGradient(
-        0f to Color.Transparent,
-        0.62f to Color.Transparent,
-        1f to Color(0xFF07314C).copy(alpha = GlassStyle.SHADE_ALPHA * strength)
-    )
-    onDrawBehind {
-        drawRect(topGloss)
-        drawRect(bottomShade)
-        val r = size.minDimension * GlassStyle.SPECULAR_RADIUS
-        val c = Offset(size.width * 0.28f, size.height * 0.01f)
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(Color.White.copy(alpha = GlassStyle.SPECULAR_ALPHA * strength), Color.Transparent),
-                center = c,
-                radius = r
-            ),
-            radius = r,
-            center = c
+@Composable
+private fun Modifier.glassSheen(strength: Float = 1f): Modifier {
+    val sweep = LocalLiquidSweep.current
+    val palette = LocalLiquidPalette.current
+    return drawWithCache {
+        val topGloss = Brush.verticalGradient(
+            0f to Color.White.copy(alpha = GlassStyle.GLOSS_ALPHA * strength),
+            GlassStyle.GLOSS_SPREAD to Color.White.copy(alpha = 0.12f * strength),
+            0.62f to Color.Transparent
         )
+        val bottomShade = Brush.verticalGradient(
+            0f to Color.Transparent,
+            0.62f to Color.Transparent,
+            1f to Color(0xFF07314C).copy(alpha = GlassStyle.SHADE_ALPHA * strength)
+        )
+        val lens = Brush.radialGradient(
+            colors = listOf(
+                Color.White.copy(alpha = GlassStyle.LENS_ALPHA * strength),
+                Color.Transparent,
+                palette.primary.copy(alpha = GlassStyle.WARP_ALPHA * strength)
+            ),
+            center = Offset(size.width * 0.5f, size.height * 0.42f),
+            radius = size.minDimension * 0.95f
+        )
+        onDrawBehind {
+            val w = size.width
+            val h = size.height
+            val unit = size.minDimension
+            val p = sweep.value
+
+            drawRect(topGloss)
+            drawRect(bottomShade)
+            drawRect(lens)
+
+            // 斜向扫过的镜面高光：液态玻璃「活着」的关键特征
+            val sweepX = -w * 0.40f + p * w * 1.80f
+            drawRect(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        Color.White.copy(alpha = GlassStyle.SWEEP_ALPHA * strength),
+                        Color.Transparent
+                    ),
+                    start = Offset(sweepX - w * 0.30f, 0f),
+                    end = Offset(sweepX + w * 0.30f, h)
+                )
+            )
+
+            // 表面涟漪：两圈随扫光扩散的极细弧线
+            for (k in 0 until 2) {
+                val progress = (p + k * 0.5f) % 1f
+                drawCircle(
+                    color = Color.White.copy(
+                        alpha = GlassStyle.RIPPLE_ALPHA * (1f - progress) * strength
+                    ),
+                    radius = unit * (0.14f + progress * 0.66f),
+                    center = Offset(w * 0.5f, h * 0.5f),
+                    style = Stroke(width = 1.1.dp.toPx())
+                )
+            }
+
+            // 固定左上角点高光（保留原有玻璃质感）
+            val r = unit * GlassStyle.SPECULAR_RADIUS
+            val c = Offset(w * 0.28f, h * 0.01f)
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = GlassStyle.SPECULAR_ALPHA * strength),
+                        Color.Transparent
+                    ),
+                    center = c,
+                    radius = r
+                ),
+                radius = r,
+                center = c
+            )
+        }
     }
+}
+
+/** 液态玻璃的彩虹色散边缘：外圈多色折射 + 内圈白色 rim。 */
+@Composable
+private fun Modifier.liquidRim(
+    shape: Shape,
+    width: Dp = GlassStyle.RIM_WIDTH,
+    inner: Color = Color.White.copy(alpha = GlassStyle.PANEL_EDGE_ALPHA)
+): Modifier {
+    val palette = LocalLiquidPalette.current
+    val rim = palette.dispersion.map { it.copy(alpha = it.alpha * GlassStyle.DISPERSION_ALPHA) }
+    return this
+        .border(width, Brush.linearGradient(rim + rim.asReversed()), shape)
+        .border(width * 0.5f, inner, shape)
 }
 
 /* ============================== 玻璃面板 ============================== */
@@ -238,15 +329,21 @@ fun GlassSurface(
             )
             .clip(shape)
     ) {
-        // 玻璃底色（竖向渐变，模拟厚度）
+        // 玻璃底色（竖向渐变，模拟厚度）+ 当前档位色相渗透，让 tint 随主题流动
+        val palette = LocalLiquidPalette.current
         Box(
             Modifier
                 .matchParentSize()
                 .background(Brush.verticalGradient(listOf(topColor, bottomColor)))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.Transparent, palette.primary.copy(alpha = 0.12f))
+                    )
+                )
                 .glassSheen()
         )
-        // 玻璃高光边缘
-        Box(Modifier.matchParentSize().border(1.2.dp, edgeColor, shape))
+        // 液态玻璃边缘：彩虹色散外圈 + 白色 rim 内圈
+        Box(Modifier.matchParentSize().liquidRim(shape, inner = edgeColor))
         content()
     }
 }
@@ -308,7 +405,7 @@ fun GlassButton(
                 )
             )
             .glassSheen(0.9f)
-            .border(1.4.dp, Color.White.copy(alpha = GlassStyle.BTN_EDGE_ALPHA), shape)
+            .liquidRim(shape, width = 1.4.dp, inner = Color.White.copy(alpha = GlassStyle.BTN_EDGE_ALPHA))
             .clickable(
                 interactionSource = interaction,
                 indication = null,
@@ -377,7 +474,7 @@ fun GlassOutlinedButton(
                 )
             )
             .glassSheen(0.75f)
-            .border(1.3.dp, contentColor.copy(alpha = 0.55f), shape)
+            .liquidRim(shape, width = 1.3.dp, inner = contentColor.copy(alpha = 0.55f))
             .clickable(
                 interactionSource = interaction,
                 indication = null,
@@ -441,7 +538,7 @@ fun GlassTextButton(
                 )
             )
             .glassSheen(0.6f)
-            .border(1.dp, Color.White.copy(alpha = 0.78f), shape)
+            .liquidRim(shape, width = 1.dp, inner = Color.White.copy(alpha = 0.78f))
             .clickable(
                 interactionSource = interaction,
                 indication = null,
@@ -521,7 +618,7 @@ fun GlassIconButton(
                 Brush.verticalGradient(listOf(topFill, bottomFill))
             )
             .glassSheen(if (containerColor != null) 0.9f else 0.8f)
-            .border(1.2.dp, edgeFill, shape)
+            .liquidRim(shape, width = 1.2.dp, inner = edgeFill)
             .clickable(
                 interactionSource = interaction,
                 indication = null,
