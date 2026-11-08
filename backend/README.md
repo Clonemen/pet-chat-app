@@ -132,7 +132,7 @@ backend/
 ### 部署后必做
 
 - **App 服务器地址**：把 Android 登录页「高级选项」里的服务器地址改为云地址（如 `https://pet-chat-backend.onrender.com`）；或把 `MainActivity.kt` 的默认 `serverBase` 改成该地址后重新打包，这样无需每次手动填。
-- **生产短信**：`SMS_DEV` 在云端已设为 `false`，请先把 `src/store.js` 的 `sendSmsCode` 替换为真实短信服务（阿里云/腾讯云/Twilio 等），并删除 `devCode` 回传，否则注册会发不出验证码。
+- **生产短信**：`SMS_DEV` 代码默认 `true`（验证码回传客户端，仅适合联调）。正式上线前先把 `src/store.js` 的 `sendSmsCode` 换成真实短信服务（阿里云/腾讯云/Twilio 等），再设 `SMS_DEV=false` 并去掉 `devCode` 回传，否则任何人都能看到验证码。
 - **AI provider**：默认 `LLM_PROVIDER=mock` / `IMAGE_PROVIDER=mock`（离线占位）。要真实 AI 反应/文生图，设置 `OPENAI_API_KEY` 并把 provider 改为 `openai`。
 
 ### 环境变量总览
@@ -144,3 +144,46 @@ backend/
 | `SMS_DEV` | 开发期验证码回传（true 时方便联调） | true | **false** |
 | `LLM_PROVIDER` / `IMAGE_PROVIDER` | mock \| openai | mock | 按需 |
 | `OPENAI_API_KEY` | 真实 AI 时必填 | 空 | 你的密钥 |
+| `NODE_ENV` | 运行环境标记 | 空 | production |
+
+## 运维收尾（VPS 部署后）
+
+`deploy.sh` 为快速验证会用 `nohup` 启动，SSH 断开或服务器重启后不会自动拉起。生产使用建议依次执行以下三项。
+
+### 1. 常驻加固（systemd：开机自启 + 崩溃自动重启）
+
+```bash
+cd ~/pet-chat-app && git pull
+bash backend/ops/systemd-setup.sh              # 加固 + 打印测试账号清理预览（不删）
+CLEANUP=1 bash backend/ops/systemd-setup.sh   # 确认预览后再真正清理
+```
+
+脚本会先停服释放 3000 端口、备份 `data.json`，再写入 `petchat.service` 并自检 `/health`。
+
+```bash
+systemctl status petchat          # 状态
+journalctl -u petchat -f          # 日志
+sudo systemctl restart petchat    # 重启
+```
+
+> 清理脚本默认**只预览**；`--apply` 才写入，且写入前强制备份。只按 `username=smoketest` 或 `phone=13900000001` 精确匹配，连带清掉其 session / 宠物 / 好友关系 / 消息，不会触碰其他真实用户。
+
+### 2. Nginx + 域名 + HTTPS（可选）
+
+```bash
+DOMAIN=pet.example.com bash backend/ops/nginx-https-setup.sh
+```
+
+**前置条件**：域名 A 记录已指向公网 IP 且生效；云控制台安全组放行 **TCP 80 / 443**；后端在 `127.0.0.1:3000` 正常。脚本会装 nginx + certbot，配置反代并正确转发 WebSocket Upgrade（`/ws` 的 `wss` 握手），申请证书并开启自动续期。
+
+配好后 App「设置 → 服务器地址」填 `https://你的域名`（**不要带 `:3000`**）。App 内部用 `serverBase.replaceFirst("^http", "ws")` 推导 WebSocket 地址，`https` 会自动变成 `wss`，实时聊天不受影响，Android 无需改代码。
+
+确认全部流量走 HTTPS 后，可在安全组关闭 TCP 3000 入站，减少裸端口暴露。
+
+### 3. 上线前清单
+
+- [ ] 接真实短信服务，设 `SMS_DEV=false`，去掉 `devCode` 回传
+- [ ] 清理联调测试账号
+- [ ] systemd 常驻已启用（`systemctl is-enabled petchat` 应返回 `enabled`）
+- [ ] 定期备份 `backend/data.json`
+- [ ] 如需真实 AI 反应 / 文生图，配置 `OPENAI_API_KEY` 与 provider
