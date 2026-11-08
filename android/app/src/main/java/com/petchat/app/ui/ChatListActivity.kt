@@ -142,7 +142,7 @@ private fun ChatListScreen(
     onOpenSettings: () -> Unit,
     onOpenChat: (String, String) -> Unit
 ) {
-    var selectedTab by remember { mutableStateOf(0) } // 0 = 我的好友（首屏），1 = 宠物管理
+    var selectedTab by remember { mutableStateOf(0) } // 0 = 我的好友（首屏），1 = 我的宠物，2 = 宠物管理
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -526,20 +526,20 @@ private fun MyPetTab(
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 左侧：宠物完整形象（全貌，不裁剪成圆形）
+                        // 左侧：宠物 3D 全貌（可拖拽旋转，加载失败自动回落 2D 图）
                         Box(
                             modifier = Modifier
-                                .weight(0.42f)
-                                .height(200.dp)
+                                .weight(0.48f)
+                                .height(220.dp)
                                 .clip(RoundedCornerShape(18.dp))
                                 .background(Color.White.copy(alpha = 0.30f)),
                             contentAlignment = Alignment.Center
                         ) {
                             PetFullFigure(pet = pet, presetId = session.presetId)
                         }
-                        Spacer(Modifier.width(14.dp))
+                        Spacer(Modifier.width(12.dp))
                         // 右侧：性格特点介绍文字
-                        Column(modifier = Modifier.weight(0.58f)) {
+                        Column(modifier = Modifier.weight(0.52f)) {
                             Text(
                                 pet.name.ifBlank { "我的宠物" },
                                 fontSize = 20.sp,
@@ -562,6 +562,14 @@ private fun MyPetTab(
                                 color = scheme.secondary,
                                 lineHeight = 19.sp
                             )
+                            if (Pet3DAssets.of(session.presetId, pet.species) != null) {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "✦ 3D 形象 · 拖拽可旋转",
+                                    fontSize = 11.sp,
+                                    color = scheme.primary.copy(alpha = 0.8f)
+                                )
+                            }
                         }
                     }
                 }
@@ -572,30 +580,40 @@ private fun MyPetTab(
     }
 }
 
-/** 宠物完整形象（全貌）：远程图优先，否则取本地预设 / 默认吉祥物，按原比例铺满 */
+/**
+ * 宠物完整形象：优先展示可交互的 3D 模型（内置预设 / 按物种借用），
+ * 加载中或 3D 不可用时回落到原有 2D 图（远程 AI 形象 / 本地预设 / 吉祥物）。
+ */
 @Composable
 private fun PetFullFigure(pet: PetProfile, presetId: String?) {
     val resId = if (pet.imageUrl.isBlank()) com.petchat.app.data.PetPresets.resOf(presetId) else null
-    when {
-        pet.imageUrl.isNotBlank() -> AsyncImage(
-            model = pet.imageUrl,
-            contentDescription = "宠物完整形象",
-            modifier = Modifier.fillMaxSize().padding(10.dp),
-            contentScale = ContentScale.Fit
-        )
-        resId != null -> Image(
-            painter = painterResource(resId),
-            contentDescription = "宠物完整形象",
-            modifier = Modifier.fillMaxSize().padding(10.dp),
-            contentScale = ContentScale.Fit
-        )
-        else -> Image(
-            painter = painterResource(R.drawable.ic_mascot),
-            contentDescription = "宠物完整形象",
-            modifier = Modifier.fillMaxSize().padding(10.dp),
-            contentScale = ContentScale.Fit
-        )
+    val fallback: @Composable () -> Unit = {
+        when {
+            pet.imageUrl.isNotBlank() -> AsyncImage(
+                model = pet.imageUrl,
+                contentDescription = "宠物完整形象",
+                modifier = Modifier.fillMaxSize().padding(10.dp),
+                contentScale = ContentScale.Fit
+            )
+            resId != null -> Image(
+                painter = painterResource(resId),
+                contentDescription = "宠物完整形象",
+                modifier = Modifier.fillMaxSize().padding(10.dp),
+                contentScale = ContentScale.Fit
+            )
+            else -> Image(
+                painter = painterResource(R.drawable.ic_mascot),
+                contentDescription = "宠物完整形象",
+                modifier = Modifier.fillMaxSize().padding(10.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
     }
+    Pet3DView(
+        modelAsset = Pet3DAssets.of(presetId, pet.species),
+        fallback = fallback,
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
 @Composable

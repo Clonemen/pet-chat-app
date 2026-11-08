@@ -242,9 +242,17 @@ fun PetProfileScreen(
         }
         Spacer(Modifier.height(12.dp))
 
-        // 宠物形象预览
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            PetAvatar(imageUrl = imageUrl.ifBlank { null }, size = 128)
+        // 宠物形象预览：内置预设展示可旋转的 3D 模型，AI 形象沿用 2D 头像
+        Box(
+            modifier = Modifier.fillMaxWidth().height(160.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Pet3DView(
+                modelAsset = Pet3DAssets.of(presetId, null),
+                fallback = { PetAvatar(imageUrl = imageUrl.ifBlank { null }, size = 128) },
+                modifier = Modifier.size(160.dp),
+                autoRotate = true
+            )
         }
         Spacer(Modifier.height(16.dp))
 
