@@ -71,6 +71,16 @@ fi
 
 echo "== 4/6 写入 systemd unit =="
 UNIT="/etc/systemd/system/$SERVICE.service"
+# StandardOutput=append: 需要 systemd >= 240；老版本退化到 journal（日志用 journalctl 看）
+SD_VER="$(systemctl --version 2>/dev/null | head -1 | grep -oE '[0-9]+' | head -1)"
+LOG_LINES=""
+if [ -n "$SD_VER" ] && [ "$SD_VER" -ge 240 ] 2>/dev/null; then
+  LOG_LINES="StandardOutput=append:$HOME/petchat.log
+StandardError=append:$HOME/petchat.log"
+  echo "   systemd $SD_VER → 日志同时写入 $HOME/petchat.log"
+else
+  echo "   systemd ${SD_VER:-未知} → 日志走 journalctl -u $SERVICE"
+fi
 $SUDO tee "$UNIT" > /dev/null <<EOF
 [Unit]
 Description=PetChat Backend (Node/Express + WebSocket IM)
@@ -87,8 +97,7 @@ Environment=PORT=3000
 ExecStart=$NODE_BIN src/server.js
 Restart=always
 RestartSec=3
-StandardOutput=append:$HOME/petchat.log
-StandardError=append:$HOME/petchat.log
+$LOG_LINES
 
 [Install]
 WantedBy=multi-user.target
