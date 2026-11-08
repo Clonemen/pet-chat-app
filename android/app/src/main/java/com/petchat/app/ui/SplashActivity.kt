@@ -47,7 +47,10 @@ class SplashActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            SplashScreen(onSkip = ::skip)
+            // 闪屏同样走液态玻璃主题：档位色相、流动光斑与扫光才会生效
+            PetChatTheme {
+                SplashScreen(onSkip = ::skip)
+            }
         }
 
         // 延时跳转；用可取消的 Runnable，避免与「跳过」按钮重复跳转
