@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -76,7 +77,7 @@ class SettingsActivity : ComponentActivity() {
         setContent {
             PetChatTheme {
                 SettingsScreen(
-                    initialServer = session.serverBase ?: "http://10.0.2.2:3000",
+                    initialServer = session.serverBase ?: "http://47.107.227.28:3000",
                     petOn = petRunningState,
                     onTogglePet = { togglePet() },
                     onSaveServer = { server ->
@@ -236,6 +237,54 @@ private fun SettingsScreen(
 
         Spacer(Modifier.height(16.dp))
 
+        // 液态玻璃档位：切换背景光斑色相 / 玻璃 tint / 边缘色散，即时生效并持久化
+        val context = LocalContext.current
+        val currentMode = LiquidGlassState.mode
+        GlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("✦ 液态玻璃", fontSize = 15.sp, color = scheme.onBackground)
+                Text(
+                    "选择玻璃的光斑色相与折射质感，切换后立即生效",
+                    fontSize = 11.sp,
+                    color = scheme.secondary,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    LiquidGlassMode.values().forEach { mode ->
+                        val selected = currentMode == mode
+                        GlassTextButton(
+                            onClick = { LiquidGlassState.set(context, mode) },
+                            modifier = Modifier.weight(1f),
+                            contentColor = if (selected) scheme.primary else scheme.secondary,
+                            horizontalPadding = 6.dp,
+                            verticalPadding = 9.dp
+                        ) {
+                            Text(
+                                (if (selected) "● " else "○ ") + mode.label,
+                                fontSize = 11.sp,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    currentMode.hint,
+                    fontSize = 11.sp,
+                    color = scheme.secondary
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp)
@@ -250,7 +299,7 @@ private fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    text = "模拟器默认 10.0.2.2:3000；真机填电脑局域网 IP，如 http://192.168.1.20:3000",
+                    text = "默认已指向云服务器 http://47.107.227.28:3000；如需改用其他地址可在此修改",
                     fontSize = 11.sp,
                     color = scheme.secondary,
                     modifier = Modifier
